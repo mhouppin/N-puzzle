@@ -63,7 +63,7 @@ int npuzzle_init(NPuzzle *np, const char *filename)
         return -1;
     }
 
-    size_t y = 0;
+    size_t yLen = 0;
 
     while ((r = getline(&line, &size, f)) > 0)
     {
@@ -81,16 +81,16 @@ int npuzzle_init(NPuzzle *np, const char *filename)
         if (*ptr == '#' || *ptr == '\0')
             continue ;
 
-        if (y == np->size)
+        if (yLen == np->size)
         {
             ft_dprintf(STDERR_FILENO, "Parsing error: '%s' found even though the puzzle is complete\n", ptr);
             free(np->board);
             return -1;
         }
 
-        size_t x;
+        size_t xLen;
 
-        for (x = 0; x < np->size; ++x)
+        for (xLen = 0; xLen < np->size; ++xLen)
         {
             uint16_t value = strtoul(ptr, &ptr, 10);
 
@@ -104,7 +104,7 @@ int npuzzle_init(NPuzzle *np, const char *filename)
                 return -1;
             }
 
-            np->board[y * np->size + x] = value;
+            np->board[yLen * np->size + xLen] = value;
             ptr += ft_strspn(ptr, " \t");
         }
 
@@ -115,7 +115,7 @@ int npuzzle_init(NPuzzle *np, const char *filename)
             return -1;
         }
 
-        ++y;
+        ++yLen;
     }
 
     for (size_t sq1 = 0; sq1 < np->size * np->size; ++sq1)
@@ -128,10 +128,53 @@ int npuzzle_init(NPuzzle *np, const char *filename)
             }
 
     // Now that we know the board is valid, initialize other fields.
-    size_t sq;
-    for (sq = 0; np->board[sq] != 0; ++sq);
-    np->holeIdx = sq;
+    size_t holeIdx;
+    for (holeIdx = 0; np->board[holeIdx] != 0; ++holeIdx);
+    np->holeIdx = holeIdx;
     np->zobrist = 0;
+
+    // Edit array values to tag corresponding squares.
+    uint16_t *tagArray = malloc(np->size * np->size * sizeof(uint16_t));
+
+    if (tagArray == NULL)
+    {
+        perror("NPuzzle error");
+        free(np->board);
+        return -1;
+    }
+
+    size_t counter = 0;
+
+    // Now initialize the tag array values in a spiral shape.
+    for (size_t layer = 0; layer < np->size / 2; ++layer)
+    {
+        size_t boxMin = layer;
+        size_t boxMax = np->size - layer - 1;
+
+        for (size_t x = boxMin; x <= boxMax; ++x)
+            tagArray[boxMin * np->size + x] = ++counter;
+
+        for (size_t y = boxMin + 1; y <= boxMax; ++y)
+            tagArray[y * np->size + boxMax] = ++counter;
+
+        for (size_t x = boxMax - 1; x + 1 > boxMin; --x)
+            tagArray[boxMax * np->size + x] = ++counter;
+
+        for (size_t y = boxMax - 1; y > boxMin; --y)
+            tagArray[y * np->size + boxMin] = ++counter;
+    }
+
+    // Add the hole (represented by a 0) to the tag array.
+    tagArray[(np->size / 2) * np->size + (np->size - 1) / 2] = 0;
+
+    // Now replace the piece values in the board by their corresponding square.
+    for (size_t sq = 0; sq < np->size * np->size; ++sq)
+        for (size_t asq = 0; asq < np->size * np->size; ++asq)
+            if (np->board[sq] == tagArray[asq])
+            {
+                np->board[sq] = asq;
+                break ;
+            }
 
     return 0;
 }
@@ -142,6 +185,6 @@ void npuzzle_apply(NPuzzle *np, uint16_t squareIdx)
 
     np->zobrist ^= move_zobrist(piece, squareIdx, np->holeIdx);
     np->board[np->holeIdx] = piece;
-    np->board[squareIdx] = 0;
+    np->board[squareIdx] = np->size * np->size;
     np->holeIdx = squareIdx;
 }
