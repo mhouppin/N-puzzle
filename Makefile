@@ -6,12 +6,12 @@ DEPENDS := $(SOURCES:.c=.d)
 
 LIBFT_SOURCES := $(wildcard libft/sources/*.c) $(wildcard libft/include/*.h) Makefile
 
-all: $(NAME)
-
 CPPFLAGS += -Wall -Wextra -Wshadow -Wvla -Werror -std=gnu11 -MMD -I include -I libft/include
 CFLAGS += -O3
 LDFLAGS += -Llibft
 LDLIBS += -lft -lpthread -lm
+
+all: $(NAME)
 
 $(NAME): $(OBJECTS) libft/libft.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(LDLIBS)
