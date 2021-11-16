@@ -4,6 +4,6 @@
 # include "heuristic.h"
 # include "npuzzle.h"
 
-void launch_astar(NPuzzle *np, heuristic_t h, uint32_t weight);
+void launch_astar(NPuzzle *np, heuristic_t h);
 
 #endif

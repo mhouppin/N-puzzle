@@ -5,6 +5,8 @@
 #include "npuzzle.h"
 #include "heuristic.h"
 
+uint64_t Weight = ONE_MOVE;
+
 int main(int argc, char **argv)
 {
     NPuzzle np;
@@ -19,17 +21,16 @@ int main(int argc, char **argv)
         return 1;
 
     heuristic_t h = &manhattan;
-    uint32_t weight = ONE_MOVE;
 
     for (int i = 2; i < argc; ++i)
     {
         if (!ft_memcmp(argv[i], "--weight=", 9))
-            weight = (uint32_t)(strtod(argv[i] + 9, NULL) * ONE_MOVE);
+            Weight = (uint64_t)(strtod(argv[i] + 9, NULL) * ONE_MOVE);
         else if (!ft_strcmp(argv[i], "--hole"))
             h = &hole_manhattan;
     }
 
-    launch_astar(&np, h, weight);
+    launch_astar(&np, h);
 
     free(np.board);
 

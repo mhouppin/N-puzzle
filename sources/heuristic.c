@@ -56,7 +56,7 @@ uint64_t hole_manhattan(const NPuzzle *np)
     return ret;
 }
 
-uint64_t node_value(const NPuzzle *np, heuristic_t h, uint64_t g, uint64_t weight)
+uint64_t node_value(uint64_t h, uint64_t g, uint64_t weight)
 {
-    return g * ONE_MOVE + h(np) * weight / ONE_MOVE;
+    return g * ONE_MOVE + h * weight / ONE_MOVE;
 }
