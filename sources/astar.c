@@ -5,18 +5,6 @@
 #include "ft_stdlib.h"
 #include "ft_vector.h"
 
-void dump_queue(PriorQueue *pq)
-{
-    extern uint64_t Weight;
-
-    for (size_t i = 0; i < pq->vec.itemCount; i++)
-    {
-        NPuzzle *np = *(NPuzzle **)vector_at(&pq->vec, i);
-        ft_printf("Node 0x%08x: G(%lu), H(%lu), F(%lu)\n", (unsigned int)np->zobrist,
-            np->g, np->h, node_value(np->h, np->g, Weight));
-    }
-}
-
 void push_npuzzle(PriorQueue *pq, Vector *stateBucket, NPuzzle *base, uint16_t sq, heuristic_t h)
 {
     NPuzzle *next = npuzzle_dup(base);
@@ -34,9 +22,6 @@ void push_npuzzle(PriorQueue *pq, Vector *stateBucket, NPuzzle *base, uint16_t s
         // Note: next->parent could be replaced by base there
         if (bucketData->g > next->g)
         {
-            ft_printf("Shrink path for node 0x%08x: %lu -> %lu\n", (unsigned int)bucketData->zobrist, bucketData->g, next->g);
-            ft_printf("Shrink after %lu nodes\n", stateBucket->itemCount);
-
             bucketData->g = next->g;
             bucketData->parent = next->parent;
 
@@ -44,18 +29,9 @@ void push_npuzzle(PriorQueue *pq, Vector *stateBucket, NPuzzle *base, uint16_t s
 
             // Push bucketData on the queue again if it is not there yet, since we have a new shorter path
             if (!ptr)
-            {
-                ft_printf("Push shrunk node to queue\n");
                 pqueue_push(pq, &bucketData);
-                // dump_queue(pq);
-                ft_printf("\n");
-            }
             else
-            {
-                ft_printf("Update shrunk node position into queue\n");
-                // heap_adjust(pq->vec.data, pq->vec.itemSize, pq->vec.itemCount, npuzzle_comp_value, ptr - (NPuzzle **)pq->vec.data);
-                heap_make(pq->vec.data, pq->vec.itemSize, pq->vec.itemCount, npuzzle_comp_value);
-            }
+                heap_push(pq->vec.data, pq->vec.itemSize, (size_t)(ptr - (NPuzzle **)pq->vec.data) + 1, npuzzle_comp_value);
         }
 
         // Free next, since we already have it in the state bucket
@@ -72,7 +48,6 @@ void push_npuzzle(PriorQueue *pq, Vector *stateBucket, NPuzzle *base, uint16_t s
 
 void launch_astar(NPuzzle *np, heuristic_t h)
 {
-    extern uint64_t Weight;
     PriorQueue pq;
     Vector stateBucket;
 
@@ -116,15 +91,6 @@ void launch_astar(NPuzzle *np, heuristic_t h)
 
         pqueue_pop(&pq, &npCur);
 
-        size_t fuckedNode = heap_is_ok_until(pq.vec.data, pq.vec.itemSize, pq.vec.itemCount, npuzzle_comp_value);
-
-        if (fuckedNode != pq.vec.itemCount)
-        {
-            ft_printf("Heap is fucked after %lu nodes\n", stateBucket.itemCount);
-            // dump_queue(&pq);
-            return ;
-        }
-
         if (npuzzle_solved(npCur))
         {
             ft_printf("Path length: %lu\n", (unsigned long)npCur->g);
@@ -148,8 +114,5 @@ void launch_astar(NPuzzle *np, heuristic_t h)
             push_npuzzle(&pq, &stateBucket, npCur, holeIdx - size, h);
         if (holeIdx / size != size - 1)
             push_npuzzle(&pq, &stateBucket, npCur, holeIdx + size, h);
-
-        // dump_queue(&pq);
-        // ft_printf("\n");
     }
 }
