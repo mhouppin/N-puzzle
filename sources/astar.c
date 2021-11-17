@@ -1,15 +1,27 @@
 #include "astar.h"
 #include "ft_heap.h"
+#include "ft_math.h"
 #include "ft_prior_queue.h"
 #include "ft_stdio.h"
 #include "ft_stdlib.h"
 #include "ft_vector.h"
+#include "stats.h"
 
-void push_npuzzle(PriorQueue *pq, Vector *stateBucket, NPuzzle *base, uint16_t sq, heuristic_t h)
+void backprop_path(NPuzzle *np, uint64_t depth, bool first)
+{
+    if (np->parent)
+        backprop_path(np->parent, depth - 1, false);
+
+    ft_printf("%*hu%s", (np->size > 31) + (np->size > 9) + (np->size > 3) + 1, np->holeIdx,
+        first || (depth % 10 == 9) ? "\n" : " - ");
+}
+
+void push_npuzzle(PriorQueue *pq, Vector *stateBucket, NPuzzle *base, uint16_t sq, heuristic_t h, Stats *stats)
 {
     NPuzzle *next = npuzzle_dup(base);
 
     npuzzle_apply(next, sq);
+    stats_update_queue_push(stats, next);
 
     // Check if the puzzle is already in the state bucket
     NPuzzle **data = vector_search(stateBucket, &next, npuzzle_comp_state);
@@ -18,10 +30,13 @@ void push_npuzzle(PriorQueue *pq, Vector *stateBucket, NPuzzle *base, uint16_t s
     {
         NPuzzle *bucketData = *data;
 
+        stats_update_duplicate(stats);
+
         // If it is, update the bucket data if the new one has a shorter path from start
         // Note: next->parent could be replaced by base there
         if (bucketData->g > next->g)
         {
+            stats_update_shrink(stats, bucketData->g - next->g);
             bucketData->g = next->g;
             bucketData->parent = next->parent;
 
@@ -46,11 +61,14 @@ void push_npuzzle(PriorQueue *pq, Vector *stateBucket, NPuzzle *base, uint16_t s
     }
 }
 
-void launch_astar(NPuzzle *np, heuristic_t h)
+void launch_astar(NPuzzle *np, heuristic_t h, size_t maxNodes, bool verbose)
 {
+    extern uint64_t Weight;
     PriorQueue pq;
     Vector stateBucket;
+    Stats stats;
 
+    stats_init(&stats, Weight, verbose);
     pqueue_init(&pq, sizeof(NPuzzle *), &npuzzle_comp_value);
     vector_init(&stateBucket, sizeof(NPuzzle *));
     vector_set_item_dtor(&stateBucket, &untyped_npuzzle_destroy);
@@ -80,8 +98,11 @@ void launch_astar(NPuzzle *np, heuristic_t h)
     while (!pqueue_empty(&pq))
     {
         // Simple security to start since I don't want to generate an OOM
-        if (vector_size(&pq.vec) > 100000000)
+        if (vector_size(&pq.vec) >= maxNodes)
         {
+            ft_printf("Stopping search, max nodes reached.\n");
+            stats_print(&stats);
+
             pqueue_destroy(&pq);
             vector_destroy(&stateBucket);
             return ;
@@ -91,11 +112,13 @@ void launch_astar(NPuzzle *np, heuristic_t h)
 
         pqueue_pop(&pq, &npCur);
 
+        stats_update_queue_pop(&stats, npCur, vector_size(&pq.vec));
+
         if (npuzzle_solved(npCur))
         {
-            ft_printf("Path length: %lu\n", (unsigned long)npCur->g);
-
-            // TODO: reconstruct the path
+            ft_printf("\nPath length: %lu\nHole squares:\n", (unsigned long)npCur->g);
+            backprop_path(npCur, npCur->g, true);
+            stats_print(&stats);
 
             pqueue_destroy(&pq);
             vector_destroy(&stateBucket);
@@ -107,12 +130,18 @@ void launch_astar(NPuzzle *np, heuristic_t h)
         uint16_t size = npCur->size;
 
         if (holeIdx % size != 0)
-            push_npuzzle(&pq, &stateBucket, npCur, holeIdx - 1, h);
+            push_npuzzle(&pq, &stateBucket, npCur, holeIdx - 1, h, &stats);
         if (holeIdx % size != size - 1)
-            push_npuzzle(&pq, &stateBucket, npCur, holeIdx + 1, h);
+            push_npuzzle(&pq, &stateBucket, npCur, holeIdx + 1, h, &stats);
         if (holeIdx / size != 0)
-            push_npuzzle(&pq, &stateBucket, npCur, holeIdx - size, h);
+            push_npuzzle(&pq, &stateBucket, npCur, holeIdx - size, h, &stats);
         if (holeIdx / size != size - 1)
-            push_npuzzle(&pq, &stateBucket, npCur, holeIdx + size, h);
+            push_npuzzle(&pq, &stateBucket, npCur, holeIdx + size, h, &stats);
     }
+
+    ft_printf("Puzzle unsolvable.\n");
+    stats_print(&stats);
+
+    pqueue_destroy(&pq);
+    vector_destroy(&stateBucket);
 }

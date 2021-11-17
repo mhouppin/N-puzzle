@@ -7,6 +7,8 @@ uint64_t manhattan(const NPuzzle *np)
 
     for (uint16_t sq = 0; sq < np->size * np->size; ++sq)
     {
+        if (sq == np->holeIdx)
+            continue;
         uint16_t piece = np->board[sq];
 
         int16_t pf = (int16_t)(piece % np->size);
@@ -29,28 +31,28 @@ uint64_t hole_manhattan(const NPuzzle *np)
         uint16_t piece = np->board[np->holeIdx - 1];
 
         if (piece % np->size < (np->holeIdx - 1) % np->size)
-            ret -= ONE_MOVE / 2;
+            ret -= ONE_MOVE / 4;
     }
     if (np->holeIdx % np->size != np->size - 1)
     {
         uint16_t piece = np->board[np->holeIdx + 1];
 
         if (piece % np->size > (np->holeIdx + 1) % np->size)
-            ret -= ONE_MOVE / 2;
+            ret -= ONE_MOVE / 4;
     }
     if (np->holeIdx / np->size != 0)
     {
         uint16_t piece = np->board[np->holeIdx - np->size];
 
         if (piece / np->size < np->holeIdx / np->size - 1)
-            ret -= ONE_MOVE / 2;
+            ret -= ONE_MOVE / 4;
     }
     if (np->holeIdx / np->size != np->size - 1)
     {
         uint16_t piece = np->board[np->holeIdx + np->size];
 
         if (piece / np->size > np->holeIdx / np->size + 1)
-            ret -= ONE_MOVE / 2;
+            ret -= ONE_MOVE / 4;
     }
 
     return ret;

@@ -10,6 +10,8 @@ uint64_t Weight = ONE_MOVE;
 int main(int argc, char **argv)
 {
     NPuzzle np;
+    size_t maxNodes = 1000000;
+    bool verbose = false;
 
     if (argc == 1)
     {
@@ -25,12 +27,21 @@ int main(int argc, char **argv)
     for (int i = 2; i < argc; ++i)
     {
         if (!ft_memcmp(argv[i], "--weight=", 9))
-            Weight = (uint64_t)(strtod(argv[i] + 9, NULL) * ONE_MOVE);
+            Weight = (uint64_t)(strtod(argv[i] + 9, NULL) * ONE_MOVE + 0.5);
         else if (!ft_strcmp(argv[i], "--hole"))
             h = &hole_manhattan;
+        else if (!ft_memcmp(argv[i], "--maxnodes=", 11))
+            maxNodes = (size_t)strtol(argv[i] + 11, NULL, 10);
+        else if (!ft_strcmp(argv[i], "--verbose"))
+            verbose = true;
+        else
+        {
+            ft_printf(" Unknown option '%s'\n", argv[i]);
+            return 1;
+        }
     }
 
-    launch_astar(&np, h);
+    launch_astar(&np, h, maxNodes, verbose);
 
     free(np.board);
 
