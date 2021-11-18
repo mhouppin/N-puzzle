@@ -4,7 +4,7 @@ cd $(dirname $0)
 cd ..
 
 echo "Compiling binary..."
-make all > /dev/null || exit 1
+test -x ./n-puzzle || make all > /dev/null || exit 1
 
 echo
 echo "Running invalid tests..."
@@ -39,16 +39,19 @@ done
 echo
 echo "Running benchmark tests..."
 
-for npuzzle_file in $(find puzzles/bench -type f)
+for npuzzle_size in 3 4 5 6 7 8 10 15 20 25 50 99
 do
     echo
-    for weight in 10.0 8.0 6.0 5.0 4.0 3.0 2.5 2.0 1.5 1.2 1.0
+    echo "Testing with size $npuzzle_size:"
+
+    for shuffle_its in 5 10 15 20 25 30 40 50 75 100 150 200 300 400 500
     do
-        printf "%15s (weight $weight): " $(basename $npuzzle_file)
-        ./n-puzzle $npuzzle_file --verbose --weight=$weight --hole --maxnodes=100000 >& output.txt
+        printf " - %3d iters: " $shuffle_its
+        python3 tools/npuzzle-gen.py -s -i $shuffle_its $npuzzle_size > puzzle.np
+        ./n-puzzle puzzle.np --verbose --max-memory=1024 >& output.txt
         python3 tools/parse_output.py output.txt | tee tmp.txt
         if grep "Unsolved" tmp.txt >& /dev/null; then break; fi
     done
 done
 
-rm -f tmp.txt output.txt
+rm -f tmp.txt output.txt puzzle.np

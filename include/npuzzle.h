@@ -24,6 +24,7 @@ int npuzzle_solved(const NPuzzle *np);
 void npuzzle_apply(NPuzzle *np, uint16_t move);
 NPuzzle *npuzzle_dup(NPuzzle *np);
 int npuzzle_comp_state(const void *l, const void *r);
+int npuzzle_comp_stateptr(const void *l, const void *r);
 int npuzzle_comp_value(const void *l, const void *r);
 
 #endif

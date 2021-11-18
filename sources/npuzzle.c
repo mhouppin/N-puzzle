@@ -255,8 +255,8 @@ NPuzzle *npuzzle_dup(NPuzzle *np)
 
 int npuzzle_comp_state(const void *l, const void *r)
 {
-    const NPuzzle *left = *(NPuzzle **)l;
-    const NPuzzle *right = *(NPuzzle **)r;
+    const NPuzzle *left = l;
+    const NPuzzle *right = r;
 
     if (left->zobrist < right->zobrist)
         return -1;
@@ -264,6 +264,11 @@ int npuzzle_comp_state(const void *l, const void *r)
         return 1;
     else
         return ft_memcmp(left->board, right->board, 2 * left->size * left->size);
+}
+
+int npuzzle_comp_stateptr(const void *l, const void *r)
+{
+    return npuzzle_comp_state(*(NPuzzle **)l, *(NPuzzle **)r);
 }
 
 int npuzzle_comp_value(const void *l, const void *r)
@@ -279,5 +284,5 @@ int npuzzle_comp_value(const void *l, const void *r)
     else if (lvalue > rvalue)
         return 1;
     else
-        return 0;
+        return (int)left->g - (int)right->g;
 }

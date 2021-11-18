@@ -1,10 +1,10 @@
 #include "astar.h"
+#include "hashtable.h"
 #include "ft_heap.h"
 #include "ft_math.h"
 #include "ft_prior_queue.h"
 #include "ft_stdio.h"
 #include "ft_stdlib.h"
-#include "ft_vector.h"
 #include "stats.h"
 
 void backprop_path(NPuzzle *np, uint64_t depth, bool first)
@@ -16,7 +16,7 @@ void backprop_path(NPuzzle *np, uint64_t depth, bool first)
         first || (depth % 10 == 9) ? "\n" : " - ");
 }
 
-void push_npuzzle(PriorQueue *pq, Vector *stateBucket, NPuzzle *base, uint16_t sq, heuristic_t h, Stats *stats)
+void push_npuzzle(PriorQueue *pq, HashTable *stateBucket, NPuzzle *base, uint16_t sq, heuristic_t h, Stats *stats)
 {
     NPuzzle *next = npuzzle_dup(base);
 
@@ -24,12 +24,10 @@ void push_npuzzle(PriorQueue *pq, Vector *stateBucket, NPuzzle *base, uint16_t s
     stats_update_queue_push(stats, next);
 
     // Check if the puzzle is already in the state bucket
-    NPuzzle **data = vector_search(stateBucket, &next, npuzzle_comp_state);
+    NPuzzle *bucketData = hashtable_search(stateBucket, next);
 
-    if (data)
+    if (bucketData)
     {
-        NPuzzle *bucketData = *data;
-
         stats_update_duplicate(stats);
 
         // If it is, update the bucket data if the new one has a shorter path from start
@@ -40,7 +38,7 @@ void push_npuzzle(PriorQueue *pq, Vector *stateBucket, NPuzzle *base, uint16_t s
             bucketData->g = next->g;
             bucketData->parent = next->parent;
 
-            NPuzzle **ptr = ft_lsearch(&bucketData, pq->vec.data, pq->vec.itemCount, sizeof(NPuzzle *), npuzzle_comp_state);
+            NPuzzle **ptr = ft_lsearch(&bucketData, pq->vec.data, pq->vec.itemCount, sizeof(NPuzzle *), npuzzle_comp_stateptr);
 
             // Push bucketData on the queue again if it is not there yet, since we have a new shorter path
             if (!ptr)
@@ -57,7 +55,7 @@ void push_npuzzle(PriorQueue *pq, Vector *stateBucket, NPuzzle *base, uint16_t s
     {
         next->h = h(next);
         pqueue_push(pq, &next);
-        vector_insert(stateBucket, vector_index(stateBucket, &next, npuzzle_comp_state), &next);
+        hashtable_insert(stateBucket, next);
     }
 }
 
@@ -65,13 +63,20 @@ void launch_astar(NPuzzle *np, heuristic_t h, size_t maxNodes, bool verbose)
 {
     extern uint64_t Weight;
     PriorQueue pq;
-    Vector stateBucket;
+    HashTable stateBucket;
     Stats stats;
 
     stats_init(&stats, Weight, verbose);
     pqueue_init(&pq, sizeof(NPuzzle *), &npuzzle_comp_value);
-    vector_init(&stateBucket, sizeof(NPuzzle *));
-    vector_set_item_dtor(&stateBucket, &untyped_npuzzle_destroy);
+
+    if (hashtable_init(&stateBucket, maxNodes))
+    {
+        ft_dprintf(2, "Error: Could not allocate memory for the state bucket\n");
+        return ;
+    }
+
+    if (verbose)
+        ft_printf("Setting upper limit for nodes to %zu.\n", maxNodes);
 
     // Add the initial state to the queue and the bucket
     {
@@ -87,8 +92,9 @@ void launch_astar(NPuzzle *np, heuristic_t h, size_t maxNodes, bool verbose)
             return ;
         }
 
-        if (vector_push_back(&stateBucket, &npDup))
+        if (hashtable_insert(&stateBucket, npDup))
         {
+            ft_dprintf(2, "Error: Could not insert the initial state in the state bucket\n");
             npuzzle_destroy(npDup);
             pqueue_destroy(&pq);
             return ;
@@ -97,14 +103,13 @@ void launch_astar(NPuzzle *np, heuristic_t h, size_t maxNodes, bool verbose)
 
     while (!pqueue_empty(&pq))
     {
-        // Simple security to start since I don't want to generate an OOM
-        if (vector_size(&pq.vec) >= maxNodes)
+        if (stateBucket.totalNodes >= maxNodes)
         {
             ft_printf("Stopping search, max nodes reached.\n");
             stats_print(&stats);
 
             pqueue_destroy(&pq);
-            vector_destroy(&stateBucket);
+            hashtable_destroy(&stateBucket);
             return ;
         }
 
@@ -112,7 +117,7 @@ void launch_astar(NPuzzle *np, heuristic_t h, size_t maxNodes, bool verbose)
 
         pqueue_pop(&pq, &npCur);
 
-        stats_update_queue_pop(&stats, npCur, vector_size(&pq.vec));
+        stats_update_queue_pop(&stats, npCur, stateBucket.totalNodes);
 
         if (npuzzle_solved(npCur))
         {
@@ -121,7 +126,7 @@ void launch_astar(NPuzzle *np, heuristic_t h, size_t maxNodes, bool verbose)
             stats_print(&stats);
 
             pqueue_destroy(&pq);
-            vector_destroy(&stateBucket);
+            hashtable_destroy(&stateBucket);
             return ;
         }
 
@@ -143,5 +148,5 @@ void launch_astar(NPuzzle *np, heuristic_t h, size_t maxNodes, bool verbose)
     stats_print(&stats);
 
     pqueue_destroy(&pq);
-    vector_destroy(&stateBucket);
+    hashtable_destroy(&stateBucket);
 }

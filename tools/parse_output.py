@@ -30,7 +30,7 @@ def main(argv):
                     info[key] = value.strip()
 
     if solved:
-        print("Solved (%6d nodes, %6.3f seconds, length %3d, average %5.2f)" % (
+        print("Solved (%7d nodes, %6.3f seconds, length %3d, average %5.2f)" % (
             int(info["Total nodes"]),
             float(info["Total time"].split()[0]),
             int(info["Path length"]),

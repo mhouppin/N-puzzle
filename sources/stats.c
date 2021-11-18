@@ -28,7 +28,7 @@ void stats_init(Stats *stats, uint64_t weight, bool verbose)
 
 void stats_update_queue_pop(Stats *stats, const NPuzzle *puzzle, size_t bucketSize)
 {
-    if (stats->maxG < puzzle->g || stats->minH > puzzle->h || stats->lastPing + 10000 <= bucketSize)
+    if (stats->maxG < puzzle->g || stats->minH > puzzle->h || stats->lastPing + 50000 <= bucketSize)
     {
         stats->lastPing = bucketSize;
         stats->maxG = ft_maxu(stats->maxG, puzzle->g);
