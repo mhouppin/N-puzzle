@@ -15,6 +15,7 @@ void show_usage(const char *progName)
     ft_printf(" -h (or --help)    - Show this help.\n");
     ft_printf(" -v (or --verbose) - Show verbose output.\n");
     ft_printf(" --hole            - Uses a modified MH heuristic that takes into account the position of the hole.\n");
+    ft_printf(" --bwp             - Uses a modified MH heuristic that penalizes forced backward moves.\n");
     ft_printf(" --manhattan       - Uses the Manhattan distance heuristic. (Used by default)\n");
     ft_printf(" --weight=W        - Set the A* static weighting of the heuristic to W. (default = 1.0)\n");
     ft_printf(" --max-nodes=M     - Forces the A* search to stop after M nodes allocated.\n");
@@ -60,6 +61,9 @@ int main(int argc, char **argv)
 
         else if (!ft_strcmp(argv[i], "--manhattan"))
             h = &manhattan;
+
+        else if (!ft_strcmp(argv[i], "--bwp"))
+            h = &bwp_manhattan;
 
         else if (!ft_strcmp(argv[i], "-v") || !ft_strcmp(argv[i], "--verbose"))
             verbose = true;

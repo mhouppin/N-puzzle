@@ -48,7 +48,7 @@ do
     do
         printf " - %3d iters: " $shuffle_its
         python3 tools/npuzzle-gen.py -s -i $shuffle_its $npuzzle_size > puzzle.np
-        ./n-puzzle puzzle.np --verbose --max-memory=1024 >& output.txt
+        ./n-puzzle puzzle.np --verbose --max-memory=1024 --bwp >& output.txt
         python3 tools/parse_output.py output.txt | tee tmp.txt
         if grep "Unsolved" tmp.txt >& /dev/null; then break; fi
     done
