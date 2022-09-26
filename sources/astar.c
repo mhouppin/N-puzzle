@@ -11,9 +11,19 @@ void backprop_path(NPuzzle *np, uint64_t depth, bool first)
 {
     if (np->parent)
         backprop_path(np->parent, depth - 1, false);
+    else
+        return;
 
-    ft_printf("%*hu%s", (np->size > 31) + (np->size > 9) + (np->size > 3) + 1, np->holeIdx,
-        first || (depth % 10 == 9) ? "\n" : " - ");
+    // Use the difference between the previous hole position and the current one
+    // to determine the direction of the move.
+
+    int16_t diff = (int16_t)(np->parent->holeIdx - np->holeIdx);
+
+    const char *direction = diff == -1 ? "left"
+                          : diff ==  1 ? "right"
+                          : diff == (int16_t)(uint16_t)np->size ? "down" : "up";
+
+    ft_printf("%5s%s", direction, first || (depth % 10 == 9) ? "\n" : " - ");
 }
 
 void push_npuzzle(PriorQueue *pq, HashTable *stateBucket, NPuzzle *base, uint16_t sq, heuristic_t h, Stats *stats)
@@ -103,6 +113,7 @@ void launch_astar(NPuzzle *np, heuristic_t h, size_t maxNodes, bool verbose)
 
     while (!pqueue_empty(&pq))
     {
+        // Check if we're running out of nodes/memory on our search
         if (stateBucket.totalNodes >= maxNodes)
         {
             ft_printf("Stopping search, max nodes reached.\n");
@@ -115,13 +126,14 @@ void launch_astar(NPuzzle *np, heuristic_t h, size_t maxNodes, bool verbose)
 
         NPuzzle *npCur;
 
+        // Get the top puzzle from the priority queue and update search stats
         pqueue_pop(&pq, &npCur);
-
         stats_update_queue_pop(&stats, npCur, stateBucket.totalNodes);
 
+        // Check if we just completed the puzzle
         if (npuzzle_solved(npCur))
         {
-            ft_printf("\nPath length: %lu\nHole squares:\n", (unsigned long)npCur->g);
+            ft_printf("\nPath length: %lu\nHole movements:\n", (unsigned long)npCur->g);
             backprop_path(npCur, npCur->g, true);
             stats_print(&stats);
 
@@ -144,6 +156,7 @@ void launch_astar(NPuzzle *np, heuristic_t h, size_t maxNodes, bool verbose)
             push_npuzzle(&pq, &stateBucket, npCur, holeIdx + size, h, &stats);
     }
 
+    // TODO: create a sieve earlier in the code to catch unsolvable puzzles
     ft_printf("Puzzle unsolvable.\n");
     stats_print(&stats);
 

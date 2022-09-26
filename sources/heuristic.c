@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdio.h>
 #include "heuristic.h"
 #include "ft_stdlib.h"
 
@@ -95,16 +96,16 @@ uint64_t bwp_manhattan(const NPuzzle *np)
         // If that's not possible, increase dist until we can.
 
         // Check the top corners of the diamond.
-        if (shortens_path(np, holeX + d, holeY, -1, 0, s))
+        if (holeX + d < (int16_t)np->size && shortens_path(np, holeX + d, holeY, -1, 0, s))
             break ;
 
-        if (shortens_path(np, holeX, holeY + d, 0, -1, s))
+        if (holeY + d < (int16_t)np->size && shortens_path(np, holeX, holeY + d, 0, -1, s))
             break ;
 
-        if (shortens_path(np, holeX - d, holeY, 1, 0, s))
+        if (holeX - d >= 0 && shortens_path(np, holeX - d, holeY, 1, 0, s))
             break ;
 
-        if (shortens_path(np, holeX, holeY - d, 0, 1, s))
+        if (holeY - d >= 0 && shortens_path(np, holeX, holeY - d, 0, 1, s))
             break ;
 
         // Check the sides of the diamond.
