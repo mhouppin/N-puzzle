@@ -18,6 +18,7 @@ typedef struct NPuzzle_
 NPuzzle;
 
 int npuzzle_init(NPuzzle *np, const char *filename);
+int npuzzle_init_rand(NPuzzle *np, size_t size);
 void npuzzle_destroy(NPuzzle *np);
 void untyped_npuzzle_destroy(void *np);
 int npuzzle_solved(const NPuzzle *np);

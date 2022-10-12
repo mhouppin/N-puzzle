@@ -10,7 +10,7 @@ uint64_t Weight = ONE_MOVE;
 
 void show_usage(const char *progName)
 {
-    ft_printf("Usage: %s puzzle_file [options]\n\n", progName);
+    ft_printf("Usage: %s <puzzle_file | map_size> [options]\n\n", progName);
     ft_printf("Available options:\n");
     ft_printf(" -h (or --help)    - Show this help.\n");
     ft_printf(" -v (or --verbose) - Show verbose output.\n");
@@ -35,8 +35,23 @@ int main(int argc, char **argv)
         return argc == 1;
     }
 
-    if (npuzzle_init(&np, argv[1]))
-        return 1;
+    {
+        char *endPtr;
+        size_t npuzzleSize = strtoul(argv[1], &endPtr, 10);
+
+        if (*endPtr != '\0')
+        {
+            if (npuzzle_init(&np, argv[1]))
+                return 1;
+        }
+        else if (npuzzleSize == 0 || npuzzleSize >= 256)
+        {
+            ft_printf("Invalid map size '%s'\n", argv[1]);
+            return 1;
+        }
+        else if (npuzzle_init_rand(&np, npuzzleSize))
+            return 1;
+    }
 
     size_t singleNodeMemory = sizeof(NPuzzle) + np.size * np.size * 2 + sizeof(BucketEntry) + sizeof(BucketEntry *);
     // Round singleNodeMemory to the upper 32-byte boundary

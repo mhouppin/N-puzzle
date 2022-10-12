@@ -23,7 +23,7 @@ void backprop_path(NPuzzle *np, uint64_t depth, bool first)
                           : diff ==  1 ? "right"
                           : diff == (int16_t)(uint16_t)np->size ? "down" : "up";
 
-    ft_printf("%5s%s", direction, first || (depth % 10 == 9) ? "\n" : " - ");
+    ft_printf("%5s%s", direction, first || (depth % 10 == 0) ? "\n" : " - ");
 }
 
 void push_npuzzle(PriorQueue *pq, HashTable *stateBucket, NPuzzle *base, uint16_t sq, heuristic_t h, Stats *stats)

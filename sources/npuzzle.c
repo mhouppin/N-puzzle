@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "ft_stdio.h"
 #include "ft_string.h"
 #include "heuristic.h"
@@ -189,6 +190,108 @@ npuzzle_init_error:
     free(np->board);
     fclose(f);
     free(line);
+    return -1;
+}
+
+int npuzzle_init_rand(NPuzzle *np, size_t size)
+{
+    *np = (NPuzzle) {
+        .size = size,
+        .board = NULL,
+        .zobrist = 0,
+        .holeIdx = 0,
+        .h = 0,
+        .g = 0,
+        .parent = NULL
+    };
+
+    np->board = malloc(sizeof(uint16_t) * size * size);
+    uint16_t *tagArray = malloc(sizeof(uint16_t) * size * size);
+
+    if (np->board == NULL || tagArray == NULL)
+    {
+        perror("Generation error");
+        goto npuzzle_init_rand_error;
+    }
+
+    // Fill the board with its usual values.
+    for (size_t i = 0; i < np->size * np->size; ++i)
+        np->board[i] = (uint16_t)i;
+
+    np->holeIdx = (np->size / 2) * np->size + (np->size - 1) / 2;
+
+    // Intialize our pseudo-random number generator.
+    uint64_t seed = time(NULL);
+
+    // Start shuffling the pieces on the board.
+    for (size_t i = 0; i < np->size * np->size * 8; ++i)
+    {
+        // Generate the next PRNG state.
+        seed ^= seed << 13;
+        seed ^= seed >> 7;
+        seed ^= seed << 17;
+
+        uint64_t nextMove = seed & 3;
+
+        if (nextMove == 0 && np->holeIdx % np->size != 0)
+            npuzzle_apply(np, np->holeIdx - 1);
+
+        else if (nextMove == 1 && np->holeIdx % np->size != np->size - 1)
+            npuzzle_apply(np, np->holeIdx + 1);
+
+        else if (nextMove == 2 && np->holeIdx / np->size != 0)
+            npuzzle_apply(np, np->holeIdx - np->size);
+
+        else if (nextMove == 3 && np->holeIdx / np->size != np->size - 1)
+            npuzzle_apply(np, np->holeIdx + np->size);
+    }
+
+    // Reset the zobrist hash and cost function for the initial state.
+    np->zobrist = 0;
+    np->g = 0;
+
+    size_t counter = 0;
+
+    // Now initialize the tag array values in a spiral shape.
+    for (size_t layer = 0; layer < np->size / 2; ++layer)
+    {
+        size_t boxMin = layer;
+        size_t boxMax = np->size - layer - 1;
+
+        for (size_t x = boxMin; x <= boxMax; ++x)
+            tagArray[boxMin * np->size + x] = ++counter;
+
+        for (size_t y = boxMin + 1; y <= boxMax; ++y)
+            tagArray[y * np->size + boxMax] = ++counter;
+
+        for (size_t x = boxMax - 1; x + 1 > boxMin; --x)
+            tagArray[boxMax * np->size + x] = ++counter;
+
+        for (size_t y = boxMax - 1; y > boxMin; --y)
+            tagArray[y * np->size + boxMin] = ++counter;
+    }
+
+    // Add the hole (represented by a 0) to the tag array.
+    tagArray[(np->size / 2) * np->size + (np->size - 1) / 2] = 0;
+
+    // Write the generated npuzzle state as a valid puzzle to stdout.
+    printf("Puzzle state:\n\n%zu\n", np->size);
+
+    int align = 1 + (size >= 4) + (size >= 10) + (size >= 32) + (size >= 100);
+
+    for (size_t i = 0; i < np->size * np->size; ++i)
+        printf("%*hu%c", align, tagArray[np->board[i]],
+            i % np->size == np->size - 1 ? '\n' : ' ');
+
+    puts("");
+    fflush(stdout);
+
+    free(tagArray);
+    return 0;
+
+npuzzle_init_rand_error:
+    free(np->board);
+    free(tagArray);
     return -1;
 }
 
