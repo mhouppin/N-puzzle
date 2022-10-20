@@ -315,6 +315,28 @@ int npuzzle_solved(const NPuzzle *np)
     return 1;
 }
 
+int npuzzle_is_solvable(const NPuzzle *np)
+{
+    size_t inversions = 0;
+
+    for (size_t sq1 = 0; sq1 < np->size * np->size; ++sq1)
+    {
+        if (sq1 == np->holeIdx)
+            continue ;
+
+        for (size_t sq2 = sq1 + 1; sq2 < np->size * np->size; ++sq2)
+            if (sq2 != np->holeIdx)
+                inversions += (np->board[sq1] > np->board[sq2]);
+    }
+
+    if (np->size & 1)
+        return !(inversions & 1);
+
+    size_t parity = (np->size & 2) != 0;
+
+    return ((np->holeIdx / np->size + parity) & 1) == (inversions & 1);
+}
+
 void npuzzle_apply(NPuzzle *np, uint16_t squareIdx)
 {
     uint16_t piece = np->board[squareIdx];

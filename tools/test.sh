@@ -8,16 +8,19 @@ cd ..
 echo "Compiling binary..."
 test -x ./n-puzzle || make all > /dev/null || exit 1
 
+basic_tests_ok=1
+
 echo
 echo "Running invalid tests..."
 
-for npuzzle_file in $(find puzzles/invalid -type f)
+for npuzzle_file in $(find puzzles/invalid -type f | sort)
 do
     printf "%15s" $(basename $npuzzle_file)
     ./n-puzzle $npuzzle_file >& /dev/null
     if [ $? -eq 0 ]
     then
         echo " - FAIL"
+        basic_tests_ok=0
     else
         echo " - PASS"
     fi
@@ -26,17 +29,23 @@ done
 echo
 echo "Running valid tests..."
 
-for npuzzle_file in $(find puzzles/valid -type f)
+for npuzzle_file in $(find puzzles/valid -type f | sort)
 do
     printf "%15s" $(basename $npuzzle_file)
     ./n-puzzle $npuzzle_file --max-memory=16 >& /dev/null
     if [ $? -ne 0 ]
     then
         echo " - FAIL"
+        basic_tests_ok=0
     else
         echo " - PASS"
     fi
 done
+
+if [ $basic_tests_ok -eq 0 ]
+then
+    exit 1
+fi
 
 echo
 echo "Running benchmark tests..."

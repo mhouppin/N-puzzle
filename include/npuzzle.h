@@ -22,6 +22,7 @@ int npuzzle_init_rand(NPuzzle *np, size_t size);
 void npuzzle_destroy(NPuzzle *np);
 void untyped_npuzzle_destroy(void *np);
 int npuzzle_solved(const NPuzzle *np);
+int npuzzle_is_solvable(const NPuzzle *np);
 void npuzzle_apply(NPuzzle *np, uint16_t move);
 NPuzzle *npuzzle_dup(NPuzzle *np);
 int npuzzle_comp_state(const void *l, const void *r);

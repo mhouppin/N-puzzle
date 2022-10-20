@@ -90,6 +90,12 @@ int main(int argc, char **argv)
         }
     }
 
+    if (!npuzzle_is_solvable(&np))
+    {
+        ft_dprintf(2, "Error: puzzle is not solvable\n");
+        return 1;
+    }
+
     launch_astar(&np, h, maxNodes, verbose);
 
     free(np.board);

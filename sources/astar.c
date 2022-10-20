@@ -156,8 +156,9 @@ void launch_astar(NPuzzle *np, heuristic_t h, size_t maxNodes, bool verbose)
             push_npuzzle(&pq, &stateBucket, npCur, holeIdx + size, h, &stats);
     }
 
-    // TODO: create a sieve earlier in the code to catch unsolvable puzzles
-    ft_printf("Puzzle unsolvable.\n");
+    // We should not arrive here since solvability detection is done above
+
+    ft_dprintf(2, "Error: puzzle is not solvable (failed detection?)\n");
     stats_print(&stats);
 
     pqueue_destroy(&pq);
