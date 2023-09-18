@@ -1,7 +1,7 @@
 #ifndef HASHTABLE_H
-# define HASHTABLE_H
+#define HASHTABLE_H
 
-# include "npuzzle.h"
+#include "npuzzle.h"
 
 typedef struct BucketEntry_
 {

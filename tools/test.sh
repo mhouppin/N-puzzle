@@ -65,4 +65,16 @@ do
     done
 done
 
-rm -f tmp.txt output.txt puzzle.np
+echo
+echo "Running memory tests..."
+
+for npuzzle_size in 3 4 5 6 7 8 10 15 20 25 50 99
+do
+    printf " - size %2d: " $npuzzle_size
+    python3 tools/npuzzle-gen.py -s -i 50 $npuzzle_size > puzzle.np
+    valgrind --log-file=leak_report.txt --leak-check=full --show-leak-kinds=definite,possible ./n-puzzle puzzle.np --verbose --max-memory=32 --bwp >& output.txt
+    grep -A1 -F "HEAP SUMMARY:" leak_report.txt | tail -n 1 | awk '{print $6"/"$9 " memleaks, "}' | tr -d '\n'
+    grep -F "ERROR SUMMARY:" leak_report.txt | awk '{print $4"/"$7 " memerrors"}'
+done
+
+rm -f tmp.txt output.txt puzzle.np leak_report.txt

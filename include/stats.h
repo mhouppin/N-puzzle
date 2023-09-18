@@ -1,9 +1,9 @@
 #ifndef STATS_H
-# define STATS_H
+#define STATS_H
 
-# include <stdbool.h>
-# include <time.h>
-# include "npuzzle.h"
+#include <stdbool.h>
+#include <time.h>
+#include "npuzzle.h"
 
 typedef struct Stats_
 {

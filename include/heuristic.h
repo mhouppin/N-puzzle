@@ -1,7 +1,7 @@
 #ifndef HEURISTIC_H
-# define HEURISTIC_H
+#define HEURISTIC_H
 
-# include "npuzzle.h"
+#include "npuzzle.h"
 
 enum { ONE_MOVE = 1024 };
 
