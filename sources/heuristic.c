@@ -38,31 +38,31 @@ uint64_t hole_manhattan(const NPuzzle *np)
         uint16_t piece = np->board[np->holeIdx - 1];
 
         if (piece % np->size < (np->holeIdx - 1) % np->size)
-            ret -= ONE_MOVE / 4;
+            return ret;
     }
     if (np->holeIdx % np->size != np->size - 1)
     {
         uint16_t piece = np->board[np->holeIdx + 1];
 
         if (piece % np->size > (np->holeIdx + 1) % np->size)
-            ret -= ONE_MOVE / 4;
+            return ret;
     }
     if (np->holeIdx / np->size != 0)
     {
         uint16_t piece = np->board[np->holeIdx - np->size];
 
         if (piece / np->size < np->holeIdx / np->size - 1)
-            ret -= ONE_MOVE / 4;
+            return ret;
     }
     if (np->holeIdx / np->size != np->size - 1)
     {
         uint16_t piece = np->board[np->holeIdx + np->size];
 
         if (piece / np->size > np->holeIdx / np->size + 1)
-            ret -= ONE_MOVE / 4;
+            return ret;
     }
 
-    return ret;
+    return ret + 2 * ONE_MOVE;
 }
 
 // Checks if moving a piece acording to dirX and dirY will make it closer to its goal position.
