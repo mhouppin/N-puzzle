@@ -56,6 +56,7 @@ void stats_update_queue_push(Stats *stats, const NPuzzle *puzzle)
 void stats_update_duplicate(Stats *stats)
 {
     stats->multiExplorations++;
+    stats->totalNodes--;
 }
 
 void stats_update_shrink(Stats *stats, uint64_t shrinkDistance)
@@ -70,10 +71,10 @@ void stats_print(const Stats *stats)
     uint64_t avgPathLength100 = stats->totalPathLength * 100 / stats->totalNodes;
 
     ft_printf("\nSummary:\n");
-    ft_printf("  Total time:          %lu.%03lu seconds\n", s / 1000, s % 1000);
-    ft_printf("  Total nodes:         %zu\n", stats->totalNodes);
-    ft_printf("  Total explorations:  %zu\n", stats->totalExplorations);
-    ft_printf("  Duplicate nodes:     %zu\n", stats->multiExplorations);
-    ft_printf("  Paths shrunk:        %zu\n", stats->pathsShrunk);
-    ft_printf("  Average path length: %lu.%02lu\n", avgPathLength100 / 100, avgPathLength100 % 100);
+    ft_printf("  Total time:       %lu.%03lu seconds\n", s / 1000, s % 1000);
+    ft_printf("  Total nodes:      %zu\n", stats->totalNodes);
+    ft_printf("  Total visits:     %zu\n", stats->totalExplorations);
+    ft_printf("  Duplicate nodes:  %zu\n", stats->multiExplorations);
+    ft_printf("  Shrunk paths:     %zu\n", stats->pathsShrunk);
+    ft_printf("  Avg. path length: %lu.%02lu\n", avgPathLength100 / 100, avgPathLength100 % 100);
 }
