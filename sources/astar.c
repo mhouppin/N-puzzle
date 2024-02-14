@@ -17,7 +17,7 @@ void backprop_path(NPuzzle *np, uint64_t depth, bool first)
     // Use the difference between the previous hole position and the current one
     // to determine the direction of the move.
 
-    int16_t diff = (int16_t)(np->parent->holeIdx - np->holeIdx);
+    int16_t diff = (int16_t)(np->holeIdx - np->parent->holeIdx);
 
     const char *direction = diff == -1 ? "left"
                           : diff ==  1 ? "right"

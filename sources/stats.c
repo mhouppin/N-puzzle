@@ -28,7 +28,8 @@ void stats_init(Stats *stats, uint64_t weight, bool verbose)
 
 void stats_update_queue_pop(Stats *stats, const NPuzzle *puzzle, size_t bucketSize)
 {
-    if (stats->maxG < puzzle->g || stats->minH > puzzle->h || stats->lastPing + 50000 <= bucketSize)
+    if (stats->maxG < puzzle->g || stats->minH > puzzle->h
+        || stats->lastPing + 50000 <= bucketSize)
     {
         stats->lastPing = bucketSize;
         stats->maxG = ft_maxu(stats->maxG, puzzle->g);
@@ -76,5 +77,6 @@ void stats_print(const Stats *stats)
     ft_printf("  Total visits:     %zu\n", stats->totalExplorations);
     ft_printf("  Duplicate nodes:  %zu\n", stats->multiExplorations);
     ft_printf("  Shrunk paths:     %zu\n", stats->pathsShrunk);
-    ft_printf("  Avg. path length: %lu.%02lu\n", avgPathLength100 / 100, avgPathLength100 % 100);
+    ft_printf("  Avg. path length: %lu.%02lu\n",
+        avgPathLength100 / 100, avgPathLength100 % 100);
 }

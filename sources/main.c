@@ -18,7 +18,7 @@ void show_usage(const char *progName)
     ft_printf(" --bwp             - Uses a modified MH heuristic that penalizes forced backward moves.\n");
     ft_printf(" --manhattan       - Uses the Manhattan distance heuristic. (Used by default)\n");
     ft_printf(" --weight=W        - Set the A* static weighting of the heuristic to W. (default = 1.0)\n");
-    ft_printf(" --max-nodes=M     - Forces the A* search to stop after M nodes allocated.\n");
+    ft_printf(" --max-nodes=N     - Forces the A* search to stop after N nodes allocated.\n");
     ft_printf(" --max-memory=M    - Sets the maximal memory usage, in MB, for running the A* search. (Default: 16 MB)\n");
     ft_printf("                     (Note that both --max-nodes and --max-memory override each other with priority to the last");
     ft_printf(" one in the arguments, if both are set.)\n");

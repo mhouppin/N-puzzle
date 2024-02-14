@@ -7,6 +7,121 @@
 #include "npuzzle.h"
 #include "zobrist.h"
 
+static void npuzzle_init_tag_array(uint16_t *tagArray, size_t size)
+{
+    size_t counter = 0;
+
+    // Initialize the tag array values in a spiral shape.
+    for (size_t layer = 0; layer < size / 2; ++layer)
+    {
+        size_t boxMin = layer;
+        size_t boxMax = size - layer - 1;
+
+        for (size_t x = boxMin; x <= boxMax; ++x)
+            tagArray[boxMin * size + x] = ++counter;
+
+        for (size_t y = boxMin + 1; y <= boxMax; ++y)
+            tagArray[y * size + boxMax] = ++counter;
+
+        for (size_t x = boxMax - 1; x + 1 > boxMin; --x)
+            tagArray[boxMax * size + x] = ++counter;
+
+        for (size_t y = boxMax - 1; y > boxMin; --y)
+            tagArray[y * size + boxMin] = ++counter;
+    }
+
+    // Add the hole (represented by a 0) to the tag array.
+    tagArray[(size / 2) * size + (size - 1) / 2] = 0;
+}
+
+static int npuzzle_parse_size(NPuzzle *np, char *line, size_t readSize)
+{
+    if (ft_strlen(line) != readSize)
+    {
+        ft_dputstr("Parsing error: nullbytes in string\n", STDERR_FILENO);
+        return -1;
+    }
+
+    line[readSize - 1] = '\0';
+
+    char *ptr = line + ft_strspn(line, " \t");
+
+    // Empty line or start of comment, skip line.
+    if (*ptr == '#' || *ptr == '\0')
+        return 0;
+
+    np->size = strtoul(ptr, &ptr, 10);
+    ptr += ft_strspn(line, " \t");
+
+    // If there's more info on the line, that's an error.
+    if (*ptr != '#' && *ptr != '\0')
+    {
+        ft_dprintf(STDERR_FILENO, "Parsing error: invalid data '%s' after puzzle size\n", ptr);
+        return -1;
+    }
+
+    return 1;
+}
+
+static int npuzzle_parse_row(NPuzzle *np, char *line, size_t readSize, size_t yLen)
+{
+    if (ft_strlen(line) != readSize)
+    {
+        ft_dputstr("Parsing error: nullbytes in string\n", STDERR_FILENO);
+        return -1;
+    }
+
+    line[readSize - 1] = '\0';
+
+    char *ptr = line + ft_strspn(line, " \t");
+
+    // Empty line or start of comment, skip line.
+    if (*ptr == '#' || *ptr == '\0')
+        return 0;
+
+    // Line isn't empty, yet we finish parsing the board, return an error.
+    if (yLen == np->size)
+    {
+        ft_dprintf(STDERR_FILENO, "Parsing error: '%s' found even though the puzzle is complete\n", ptr);
+        return -1;
+    }
+
+    for (size_t xLen = 0; xLen < np->size; ++xLen)
+    {
+        char *initialPtr = ptr;
+        uint16_t value = strtoul(ptr, &ptr, 10);
+
+        // Check if strtoul() failed to parse any number at all.
+        if (initialPtr == ptr)
+        {
+            ft_dprintf(STDERR_FILENO, "Parsing error: garbage in line or missing pieces\n");
+            ft_dprintf(STDERR_FILENO,
+                "(Note: expected a number, got '%.*s')\n",
+                (int)ft_strcspn(ptr, " \t"), ptr);
+            return -1;
+        }
+
+        // Check if the piece index fits in the board.
+        if (value >= np->size * np->size)
+        {
+            ft_dprintf(STDERR_FILENO, "Parsing error: invalid piece index '%u'\n", (unsigned int)value);
+            return -1;
+        }
+
+        np->board[yLen * np->size + xLen] = value;
+        ptr += ft_strspn(ptr, " \t");
+    }
+
+    // Check if we have remaining stuff in the line buffer after parsing the whole row.
+    if (*ptr != '#' && *ptr != '\0')
+    {
+        ft_dprintf(STDERR_FILENO, "Parsing error: extra data '%s' after piece indexes\n", ptr);
+        return -1;
+    }
+
+    return 1;
+}
+
 int npuzzle_init(NPuzzle *np, const char *filename)
 {
     FILE *f = fopen(filename, "r");
@@ -31,33 +146,15 @@ int npuzzle_init(NPuzzle *np, const char *filename)
         .parent = NULL
     };
 
+    // Parse the size field of the file.
     while ((r = getline(&line, &lineSize, f)) > 0)
     {
-        if (ft_strlen(line) != (size_t)r)
-        {
-            ft_dputstr("Parsing error: nullbytes in string\n", STDERR_FILENO);
+        int retval = npuzzle_parse_size(np, line, (size_t)r);
+
+        if (retval == -1)
             goto npuzzle_init_error;
-        }
-
-        line[r - 1] = '\0';
-        char *ptr = line + ft_strspn(line, " \t");
-
-        // Empty line or start of comment, skip line.
-        if (*ptr == '#' || *ptr == '\0')
-            continue ;
-
-        np->size = strtoul(ptr, &ptr, 10);
-
-        ptr += ft_strspn(line, " \t");
-
-        // If there's more info on the line, that's an error.
-        if (*ptr != '#' && *ptr != '\0')
-        {
-            ft_dprintf(STDERR_FILENO, "Parsing error: invalid data '%s' after puzzle size\n", ptr);
-            goto npuzzle_init_error;
-        }
-
-        break ;
+        else if (retval == 1)
+            break ;
     }
 
     if (np->size == 0 || np->size >= 256)
@@ -76,55 +173,18 @@ int npuzzle_init(NPuzzle *np, const char *filename)
 
     size_t yLen = 0;
 
+    // Parse the row fields of the file.
     while ((r = getline(&line, &lineSize, f)) > 0)
     {
-        if (ft_strlen(line) != (size_t)r)
-        {
-            ft_dputstr("Parsing error: nullbytes in string\n", STDERR_FILENO);
+        int retval = npuzzle_parse_row(np, line, r, yLen);
+
+        if (retval == -1)
             goto npuzzle_init_error;
-        }
-
-        line[r - 1] = '\0';
-        char *ptr = line + ft_strspn(line, " \t");
-
-        // Empty line or start of comment, skip line.
-        if (*ptr == '#' || *ptr == '\0')
-            continue ;
-
-        if (yLen == np->size)
-        {
-            ft_dprintf(STDERR_FILENO, "Parsing error: '%s' found even though the puzzle is complete\n", ptr);
-            goto npuzzle_init_error;
-        }
-
-        size_t xLen;
-
-        for (xLen = 0; xLen < np->size; ++xLen)
-        {
-            uint16_t value = strtoul(ptr, &ptr, 10);
-
-            if (value > np->size * np->size)
-            {
-                if (*ptr == '\0')
-                    ft_dputstr("Parsing error: missing pieces in line\n", STDERR_FILENO);
-                else
-                    ft_dprintf(STDERR_FILENO, "Parsing error: invalid piece index '%u'\n", (unsigned int)value);
-                goto npuzzle_init_error;
-            }
-
-            np->board[yLen * np->size + xLen] = value;
-            ptr += ft_strspn(ptr, " \t");
-        }
-
-        if (*ptr != '#' && *ptr != '\0')
-        {
-            ft_dprintf(STDERR_FILENO, "Parsing error: extra data '%s' after piece indexes\n", ptr);
-            goto npuzzle_init_error;
-        }
-
-        ++yLen;
+        else if (retval == 1)
+            ++yLen;
     }
 
+    // Check for duplicate pieces in the board.
     for (size_t sq1 = 0; sq1 < np->size * np->size; ++sq1)
         for (size_t sq2 = sq1 + 1; sq2 < np->size * np->size; ++sq2)
             if (np->board[sq1] == np->board[sq2])
@@ -148,29 +208,7 @@ int npuzzle_init(NPuzzle *np, const char *filename)
         goto npuzzle_init_error;
     }
 
-    size_t counter = 0;
-
-    // Now initialize the tag array values in a spiral shape.
-    for (size_t layer = 0; layer < np->size / 2; ++layer)
-    {
-        size_t boxMin = layer;
-        size_t boxMax = np->size - layer - 1;
-
-        for (size_t x = boxMin; x <= boxMax; ++x)
-            tagArray[boxMin * np->size + x] = ++counter;
-
-        for (size_t y = boxMin + 1; y <= boxMax; ++y)
-            tagArray[y * np->size + boxMax] = ++counter;
-
-        for (size_t x = boxMax - 1; x + 1 > boxMin; --x)
-            tagArray[boxMax * np->size + x] = ++counter;
-
-        for (size_t y = boxMax - 1; y > boxMin; --y)
-            tagArray[y * np->size + boxMin] = ++counter;
-    }
-
-    // Add the hole (represented by a 0) to the tag array.
-    tagArray[(np->size / 2) * np->size + (np->size - 1) / 2] = 0;
+    npuzzle_init_tag_array(tagArray, np->size);
 
     // Now replace the piece values in the board by their corresponding square.
     for (size_t sq = 0; sq < np->size * np->size; ++sq)
@@ -250,29 +288,7 @@ int npuzzle_init_rand(NPuzzle *np, size_t size)
     np->zobrist = 0;
     np->g = 0;
 
-    size_t counter = 0;
-
-    // Now initialize the tag array values in a spiral shape.
-    for (size_t layer = 0; layer < np->size / 2; ++layer)
-    {
-        size_t boxMin = layer;
-        size_t boxMax = np->size - layer - 1;
-
-        for (size_t x = boxMin; x <= boxMax; ++x)
-            tagArray[boxMin * np->size + x] = ++counter;
-
-        for (size_t y = boxMin + 1; y <= boxMax; ++y)
-            tagArray[y * np->size + boxMax] = ++counter;
-
-        for (size_t x = boxMax - 1; x + 1 > boxMin; --x)
-            tagArray[boxMax * np->size + x] = ++counter;
-
-        for (size_t y = boxMax - 1; y > boxMin; --y)
-            tagArray[y * np->size + boxMin] = ++counter;
-    }
-
-    // Add the hole (represented by a 0) to the tag array.
-    tagArray[(np->size / 2) * np->size + (np->size - 1) / 2] = 0;
+    npuzzle_init_tag_array(tagArray, np->size);
 
     // Write the generated npuzzle state as a valid puzzle to stdout.
     printf("Puzzle state:\n\n%zu\n", np->size);
